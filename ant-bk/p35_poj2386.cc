@@ -4,8 +4,7 @@ using namespace std;
 
 void dfs(int h, int w, vector<vector<char>>& f);
 
-int H = 0;
-int W = 0;
+int H = 0, W = 0;
 
 int main() {
   cin >> H >> W;

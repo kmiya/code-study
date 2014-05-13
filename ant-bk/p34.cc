@@ -4,8 +4,7 @@ using namespace std;
 
 bool dfs(int i, int sum, vector<int>& a);
 
-int K = 0;
-int N = 0;
+int K = 0, N = 0;
 
 int main() {
   int T = 0;
@@ -17,7 +16,6 @@ int main() {
       int tmp;
       cin >> tmp;
       a.push_back(tmp);
-      // cout << a[n] << " ";
     }
     if (dfs(0,0,a)) cout << "Yes" << endl;
     else cout << "No" << endl;
