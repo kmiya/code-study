@@ -13,9 +13,7 @@ int main() {
   for (auto h = 0; h < H; ++h) {
     for (auto w = 0; w < W; ++w) {
       cin >> f[h][w];
-      cout << f[h][w];
     }
-    cout << endl;
   }
   int ans = 0;
   for (auto h = 0; h < H; ++h) {
@@ -33,8 +31,7 @@ void dfs(int h, int w, vector<vector<char>>& f) {
   f[h][w] = '.';
   for (auto dh = h - 1; dh < h + 2; ++dh) {
     for (auto dw = w - 1; dw < w + 2; ++dw) {
-      if (dh >= 0  && dw >= 0 && dh < H && dw < W
-          && f[dh][dw] == 'W')
+      if (dh >= 0  && dw >= 0 && dh < H && dw < W && f[dh][dw] == 'W')
         dfs(dh, dw, f);
     }
   }
