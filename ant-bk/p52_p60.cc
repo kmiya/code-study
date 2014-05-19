@@ -1,16 +1,7 @@
-#include <algorithm>
 #include <iostream>
 #include <limits>
-#include <map>
 #include <numeric>
-#include <queue>
-#include <set>
-#include <sstream>
-#include <string>
-#include <tuple>
-#include <utility>
 #include <vector>
-#include <cmath>
 using namespace std;
 
 typedef long long ll;
@@ -58,7 +49,7 @@ int main() {
     }
     cout << "Case #" << test << ": " << ans << endl;
 
-    // // debug
+    // debug
     // for (int x = 0; x < n; ++x) {
     //   for (int y = 0; y <= V_SUM; ++y) {
     //     if (dp[y][x] == INF) cout << "I ";
