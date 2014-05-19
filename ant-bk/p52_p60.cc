@@ -40,13 +40,9 @@ int main() {
     }
 
     int ans = 0;
-    acc = 0;
-    for (int x = 0; x < n; ++x) {
-      for (int y = 0; y <= v[x] + acc; ++y) {
-        if (dp[y][x] <= W) ans = max(ans, y);
-      }
-      acc += v[x];
-    }
+    for (int y = 0; y <= V_SUM; ++y)
+      if (dp[y][n - 1] <= W) ans = max(ans, y);
+
     cout << "Case #" << test << ": " << ans << endl;
 
     // debug
