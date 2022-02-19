@@ -25,3 +25,6 @@
 
 # Rust
 target/
+
+# IntelliJ
+.idea/
