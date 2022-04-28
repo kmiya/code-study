@@ -1,7 +1,6 @@
 //! wordcount はシンプルな文字、単語、行の出現頻度の計数機能を提供します。
 //! 詳しくは[`count`](fn.count.html)関数のドキュメントを見て下さい。
 #[warn(missing_docs)]
-
 use std::collections::HashMap;
 use std::io::BufRead;
 use regex::Regex;
@@ -59,55 +58,59 @@ pub fn count(input: impl BufRead, option: CountOption) -> HashMap<String, usize>
     freqs
 }
 
-#[test]
-fn word_count_works() {
+#[cfg(test)]
+mod test {
+    use super::*;
     use std::io::Cursor;
 
-    let mut exp = HashMap::new();
-    exp.insert("aa".to_string(), 1);
-    exp.insert("bb".to_string(), 2);
-    exp.insert("cc".to_string(), 1);
+    #[test]
+    fn word_count_works() {
+        let mut exp = HashMap::new();
+        exp.insert("aa".to_string(), 1);
+        exp.insert("bb".to_string(), 2);
+        exp.insert("cc".to_string(), 1);
 
-    assert_eq!(count(Cursor::new("aa bb cc bb"), CountOption::Word), exp);
-}
+        assert_eq!(count(Cursor::new("aa bb cc bb"), CountOption::Word), exp);
+    }
 
-#[test]
-fn word_count_works2() {
-    use std::io::Cursor;
-    let mut exp = HashMap::new();
-    exp.insert("aa".to_string(), 1);
-    exp.insert("cc".to_string(), 1);
-    exp.insert("dd".to_string(), 1);
+    #[test]
+    fn word_count_works2() {
+        use std::io::Cursor;
+        let mut exp = HashMap::new();
+        exp.insert("aa".to_string(), 1);
+        exp.insert("cc".to_string(), 1);
+        exp.insert("dd".to_string(), 1);
 
-    assert_eq!(count(Cursor::new("aa  cc dd"), CountOption::Word), exp);
-}
+        assert_eq!(count(Cursor::new("aa  cc dd"), CountOption::Word), exp);
+    }
 
-#[test]
-#[should_panic]
-fn word_count_does_not_contain_unknown_words() {
-    use std::io::Cursor;
+    #[test]
+    #[should_panic]
+    fn word_count_does_not_contain_unknown_words() {
+        use std::io::Cursor;
 
-    count(
-        Cursor::new([
-            b'a',  // a
-            0xf0, 0x90, 0x80,  // でたらめなバイト列
-            0xe3, 0x81, 0x82  // あ
-        ]),
-        CountOption::Word,
-    );
-}
+        count(
+            Cursor::new([
+                b'a',  // a
+                0xf0, 0x90, 0x80,  // でたらめなバイト列
+                0xe3, 0x81, 0x82  // あ
+            ]),
+            CountOption::Word,
+        );
+    }
 
-macro_rules! assert_map {
+    macro_rules! assert_map {
     ($expr: expr, {$($key: expr => $value:expr),*}) => {
         $(assert_eq!($expr[$key], $value));*
     };
-}
+    }
 
-#[test]
-fn word_count_works3() {
-    use std::io::Cursor;
+    #[test]
+    fn word_count_works3() {
+        use std::io::Cursor;
 
-    let freqs = count(Cursor::new("aa  cc dd"), CountOption::Word);
-    assert_eq!(freqs.len(), 3);
-    assert_map!(freqs, {"aa" => 1, "cc" => 1, "dd" => 1});
+        let freqs = count(Cursor::new("aa  cc dd"), CountOption::Word);
+        assert_eq!(freqs.len(), 3);
+        assert_map!(freqs, {"aa" => 1, "cc" => 1, "dd" => 1});
+    }
 }
