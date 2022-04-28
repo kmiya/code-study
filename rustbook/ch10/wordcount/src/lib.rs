@@ -1,9 +1,9 @@
 //! wordcount はシンプルな文字、単語、行の出現頻度の計数機能を提供します。
 //! 詳しくは[`count`](fn.count.html)関数のドキュメントを見て下さい。
+use regex::Regex;
 #[warn(missing_docs)]
 use std::collections::HashMap;
 use std::io::BufRead;
-use regex::Regex;
 
 /// [`count`](fn.count.html)で使うオプション
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -91,9 +91,9 @@ mod test {
 
         count(
             Cursor::new([
-                b'a',  // a
-                0xf0, 0x90, 0x80,  // でたらめなバイト列
-                0xe3, 0x81, 0x82  // あ
+                b'a', // a
+                0xf0, 0x90, 0x80, // でたらめなバイト列
+                0xe3, 0x81, 0x82, // あ
             ]),
             CountOption::Word,
         );
