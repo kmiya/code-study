@@ -1,0 +1,20 @@
+version: "3.9"
+services:
+  postgres-data:
+    image: busybox
+    volumes:
+      - "/var/lib/postgresql/log-collector-data"
+    container_name: log-collector-postgres-datastore
+
+  postgresql:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - "postgres-data:/var/lib/postgresql/log-collector-data"
+
+volumes:
+  postgres-data:
