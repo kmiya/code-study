@@ -19,7 +19,7 @@ static int elfdump(char *head)
     Elf64_Phdr *phdr;
     Elf64_Sym *symp;
     Elf64_Rel *relp;
-    u_int64_t i, j, size;
+    uint64_t i, j, size;
     char *sname;
 
     ehdr = (Elf64_Ehdr *)head;
