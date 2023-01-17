@@ -6,18 +6,16 @@ const int g3 = 1;
 extern int e3;
 void e_func();
 
-static void s_func()
-{
-    e_func();
-    s1 = s2 = 10;
-    g1 = g2 = 10;
-    e3 = 10;
+static void s_func() {
+  e_func();
+  s1 = s2 = 10;
+  g1 = g2 = 10;
+  e3 = 10;
 }
 
-void g_func()
-{
-    s_func();
-    e_func();
-    g1 = e3 = 20;
-    fprintf(stdout, "sample\n");
+void g_func() {
+  s_func();
+  e_func();
+  g1 = e3 = 20;
+  fprintf(stdout, "sample\n");
 }

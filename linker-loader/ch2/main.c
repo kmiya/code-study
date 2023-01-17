@@ -5,8 +5,7 @@ int e3;
 void g_func();
 void e_func() {}
 
-int main()
-{
-    g_func();
-    exit(0);
+int main() {
+  g_func();
+  exit(0);
 }
