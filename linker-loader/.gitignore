@@ -1,7 +1,11 @@
+# ch2
 elfdump
-elfdump.o
 elfsamp
-elfsamp.o
-main.o
+*.o
+*.a
+
+#ch3
 ardump
 readname
+samp_ar
+samp_obj
