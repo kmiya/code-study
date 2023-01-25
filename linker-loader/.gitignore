@@ -12,3 +12,5 @@ samp_obj
 
 #ch4
 pointer
+const
+nonconst
