@@ -14,3 +14,4 @@ samp_obj
 pointer
 const
 nonconst
+initialize
