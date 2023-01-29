@@ -48,6 +48,6 @@ int main() {
   reset_ivalue(p);
   printf("i0 = %d, i1 = %d, d0 = %f, d1 = %f, s0 = %s, s1 = %s\n", i0, i1, d0,
          d1, s0, s1);
-
+  free(p);
   exit(0);
 }
