@@ -1,4 +1,8 @@
-use std::error::Error;
+use std::{
+    error::Error,
+    fs::File,
+    io::{self, BufRead, BufReader},
+};
 
 use clap::Parser;
 
@@ -7,14 +11,14 @@ use clap::Parser;
 pub struct Config {
     /// Input file(s)
     #[arg(default_value = "-")]
-    file: Vec<String>,
+    files: Vec<String>,
 
     /// Number lines
-    #[arg(short = 'n', group = "num")]
+    #[arg(short = 'n', long, group = "num")]
     number: bool,
 
     /// Number nonblank lines
-    #[arg(short = 'b', group = "num")]
+    #[arg(short = 'b', long, group = "num")]
     number_nonblank: bool,
 }
 
@@ -25,7 +29,19 @@ pub fn get_args() -> MyResult<Config> {
     Ok(config)
 }
 
+fn open(file_name: &str) -> MyResult<Box<dyn BufRead>> {
+    match file_name {
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(File::open(file_name)?))),
+    }
+}
+
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(config);
+    for file_name in config.files {
+        match open(&file_name) {
+            Err(err) => eprintln!("Failed to open {}: {}", file_name, err),
+            Ok(_) => println!("Opened {}", file_name),
+        }
+    }
     Ok(())
 }

@@ -8,5 +8,8 @@ edition = "2021"
 clap = { version = "4", features = ["derive"] }
 
 [dev-dependencies]
+anyhow = "1"
 assert_cmd = "2"
 predicates = "3"
+pretty_assertions = "1"
+rand = "0"
