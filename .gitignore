@@ -29,3 +29,6 @@ target/
 
 # IntelliJ
 .idea/
+
+# Reference
+/command-line-rust/command-line-rust
