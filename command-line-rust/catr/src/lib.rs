@@ -40,7 +40,24 @@ pub fn run(config: Config) -> MyResult<()> {
     for file_name in config.files {
         match open(&file_name) {
             Err(err) => eprintln!("Failed to open {}: {}", file_name, err),
-            Ok(_) => println!("Opened {}", file_name),
+            Ok(file) => {
+                let mut current_line = 0;
+                for (line_num, line_result) in file.lines().enumerate() {
+                    let line = line_result?;
+                    if config.number {
+                        println!("{:6}\t{}", line_num + 1, line);
+                    } else if config.number_nonblank {
+                        if line.is_empty() {
+                            println!();
+                        } else {
+                            current_line += 1;
+                            println!("{:6}\t{}", current_line, line);
+                        }
+                    } else {
+                        println!("{line}");
+                    }
+                }
+            }
         }
     }
     Ok(())
