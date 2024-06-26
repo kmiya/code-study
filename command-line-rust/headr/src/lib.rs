@@ -1,4 +1,8 @@
-use std::error::Error;
+use std::{
+    error::Error,
+    fs::File,
+    io::{self, BufRead, BufReader},
+};
 
 use clap::Parser;
 
@@ -20,12 +24,24 @@ pub struct Config {
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
+fn open(file_name: &str) -> MyResult<Box<dyn BufRead>> {
+    match file_name {
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(File::open(file_name)?))),
+    }
+}
+
 pub fn get_args() -> MyResult<Config> {
     let config = Config::parse();
     Ok(config)
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    dbg!(config);
+    for file_name in config.files {
+        match open(&file_name) {
+            Err(err) => eprintln!("{file_name}: {err}"),
+            Ok(_) => println!("Opened {file_name}"),
+        }
+    }
     Ok(())
 }
