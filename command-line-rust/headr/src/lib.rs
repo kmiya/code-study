@@ -40,7 +40,25 @@ pub fn run(config: Config) -> MyResult<()> {
     for file_name in config.files {
         match open(&file_name) {
             Err(err) => eprintln!("{file_name}: {err}"),
-            Ok(_) => println!("Opened {file_name}"),
+            Ok(mut file) => {
+                match config.bytes {
+                    Some(read_bytes) => {
+                        let mut buf = vec![0; read_bytes];
+                        file.read_exact(&mut buf)?;
+                        print!("{}", String::from_utf8_lossy(&buf));
+                        break;
+                    }
+                    None => (),
+                }
+                let print_lines = config.lines;
+                for (line_num, line_result) in file.lines().enumerate() {
+                    if print_lines < line_num + 1 {
+                        break;
+                    }
+                    let line = line_result?;
+                    println!("{line}");
+                }
+            }
         }
     }
     Ok(())
