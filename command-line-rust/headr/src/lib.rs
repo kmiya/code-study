@@ -45,18 +45,13 @@ pub fn run(config: Config) -> MyResult<()> {
                     Some(read_bytes) => {
                         let mut buf = vec![0; read_bytes];
                         file.read_exact(&mut buf)?;
-                        print!("{}", String::from_utf8_lossy(&buf));
+                        println!("{}", String::from_utf8_lossy(&buf));
                         break;
                     }
                     None => (),
                 }
-                let print_lines = config.lines;
-                for (line_num, line_result) in file.lines().enumerate() {
-                    if print_lines < line_num + 1 {
-                        break;
-                    }
-                    let line = line_result?;
-                    println!("{line}");
+                for result in file.lines().take(config.lines) {
+                    println!("{}", result?);
                 }
             }
         }
