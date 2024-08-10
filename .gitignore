@@ -32,3 +32,7 @@ target/
 
 # Reference
 /command-line-rust/command-line-rust
+
+# Not updated anymore
+/linker-loader
+/linux-in-practice-2nd
