@@ -1,3 +1,4 @@
+use std::io::Read;
 use std::{
     error::Error,
     fs::File,
@@ -37,24 +38,36 @@ pub fn get_args() -> MyResult<Config> {
 }
 
 pub fn run(config: Config) -> MyResult<()> {
-    for file_name in config.files {
-        match open(&file_name) {
-            Err(err) => eprintln!("{file_name}: {err}"),
+    let num_files = config.files.len();
+    for (file_num, filename) in config.files.iter().enumerate() {
+        match open(&filename) {
+            Err(err) => eprintln!("{filename}: {err}"),
             Ok(mut file) => {
-                match config.bytes {
-                    Some(read_bytes) => {
-                        let mut buf = vec![0; read_bytes];
-                        file.read_exact(&mut buf)?;
-                        println!("{}", String::from_utf8_lossy(&buf));
-                        break;
-                    }
-                    None => (),
+                if num_files > 1 {
+                    println!(
+                        "{}==> {} <==",
+                        if file_num > 0 { "\n" } else { "" },
+                        filename
+                    );
                 }
-                for result in file.lines().take(config.lines) {
-                    println!("{}", result?);
+                if let Some(read_bytes) = config.bytes {
+                    let mut buf = vec![0; read_bytes];
+                    let mut handle = file.take(read_bytes as u64);
+                    let bytes_read = handle.read(&mut buf)?;
+                    print!("{}", String::from_utf8_lossy(&buf[..bytes_read]));
+                } else {
+                    let mut line = String::new();
+                    for _ in 0..config.lines {
+                        let bytes = file.read_line(&mut line)?;
+                        if bytes == 0 {
+                            break;
+                        }
+                        print!("{line}");
+                        line.clear();
+                    }
                 }
             }
-        }
+        };
     }
     Ok(())
 }
