@@ -72,6 +72,7 @@ fn print_file_info(file_info: &FileInfo, config: &Config) {
             "{:>8}{:>8}{:>8}",
             file_info.num_lines, file_info.num_words, file_info.num_bytes
         );
+        return;
     }
     if config.lines {
         print!("{:>8}", file_info.num_lines);
