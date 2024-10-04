@@ -2,7 +2,7 @@ use clap::Parser;
 use std::{
     error::Error,
     fs::File,
-    io::{self, BufRead, BufReader},
+    io::{self, BufRead, BufReader, Write},
 };
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
@@ -40,13 +40,21 @@ pub fn run(config: Config) -> MyResult<()> {
     let mut prev_line = String::new();
     let mut count = 0;
     let mut first_line = true;
+    let mut out_file: Box<dyn Write> = match &config.out_file {
+        Some(out_name) => Box::new(File::create(out_name)?),
+        _ => Box::new(io::stdout()),
+    };
     loop {
         let bytes = file.read_line(&mut line)?;
         if bytes == 0 {
             if config.count {
-                print!("   {count} {prev_line}");
+                if config.out_file.is_some() {
+                    write!(out_file, "   {count} {prev_line}")?;
+                } else {
+                    write!(out_file, "   {count} {prev_line}")?;
+                }
             } else {
-                print!("{prev_line}");
+                write!(out_file, "{prev_line}")?;
             }
             break;
         }
@@ -63,9 +71,9 @@ pub fn run(config: Config) -> MyResult<()> {
             continue;
         }
         if config.count {
-            print!("   {count} {prev_line}");
+            write!(out_file, "   {count} {prev_line}")?;
         } else {
-            print!("{prev_line}");
+            write!(out_file, "{prev_line}")?;
         }
         prev_line = line.clone();
         line.clear();
