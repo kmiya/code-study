@@ -38,7 +38,7 @@ pub fn run(config: Config) -> MyResult<()> {
     let mut file = open(&config.in_file).map_err(|e| format!("{}: {}", config.in_file, e))?;
     let mut line = String::new();
     let mut prev_line = String::new();
-    let mut count = 0;
+    let mut count: u64 = 0;
     let mut first_line = true;
     let mut out_file: Box<dyn Write> = match &config.out_file {
         Some(out_name) => Box::new(File::create(out_name)?),
@@ -47,15 +47,6 @@ pub fn run(config: Config) -> MyResult<()> {
     loop {
         let bytes = file.read_line(&mut line)?;
         if bytes == 0 {
-            if config.count {
-                if config.out_file.is_some() {
-                    write!(out_file, "   {count} {prev_line}")?;
-                } else {
-                    write!(out_file, "   {count} {prev_line}")?;
-                }
-            } else {
-                write!(out_file, "{prev_line}")?;
-            }
             break;
         }
         if first_line {
@@ -65,19 +56,26 @@ pub fn run(config: Config) -> MyResult<()> {
             line.clear();
             continue;
         }
-        if prev_line == line {
+        if prev_line.trim_end() == line.trim_end() {
             count += 1;
             line.clear();
             continue;
         }
         if config.count {
-            write!(out_file, "   {count} {prev_line}")?;
+            write!(out_file, "{:>4} {prev_line}", count)?;
         } else {
             write!(out_file, "{prev_line}")?;
         }
         prev_line = line.clone();
         line.clear();
         count = 1;
+    }
+    if count > 0 {
+        if config.count {
+            write!(out_file, "{:>4} {prev_line}", count)?;
+        } else {
+            write!(out_file, "{prev_line}")?;
+        }
     }
     Ok(())
 }
