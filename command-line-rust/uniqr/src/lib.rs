@@ -37,13 +37,39 @@ fn open(file_name: &str) -> MyResult<Box<dyn BufRead>> {
 pub fn run(config: Config) -> MyResult<()> {
     let mut file = open(&config.in_file).map_err(|e| format!("{}: {}", config.in_file, e))?;
     let mut line = String::new();
+    let mut prev_line = String::new();
+    let mut count = 0;
+    let mut first_line = true;
     loop {
         let bytes = file.read_line(&mut line)?;
         if bytes == 0 {
+            if config.count {
+                print!("   {count} {prev_line}");
+            } else {
+                print!("{prev_line}");
+            }
             break;
         }
-        print!("{}", line);
+        if first_line {
+            first_line = false;
+            prev_line = line.clone();
+            count += 1;
+            line.clear();
+            continue;
+        }
+        if prev_line == line {
+            count += 1;
+            line.clear();
+            continue;
+        }
+        if config.count {
+            print!("   {count} {prev_line}");
+        } else {
+            print!("{prev_line}");
+        }
+        prev_line = line.clone();
         line.clear();
+        count = 1;
     }
     Ok(())
 }
