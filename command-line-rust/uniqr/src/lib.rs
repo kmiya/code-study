@@ -36,46 +36,38 @@ fn open(file_name: &str) -> MyResult<Box<dyn BufRead>> {
 
 pub fn run(config: Config) -> MyResult<()> {
     let mut file = open(&config.in_file).map_err(|e| format!("{}: {}", config.in_file, e))?;
-    let mut line = String::new();
-    let mut prev_line = String::new();
-    let mut count: u64 = 0;
-    let mut first_line = true;
     let mut out_file: Box<dyn Write> = match &config.out_file {
         Some(out_name) => Box::new(File::create(out_name)?),
         _ => Box::new(io::stdout()),
     };
+    let mut print = |count: u64, text: &str| -> MyResult<()> {
+        if count > 0 {
+            if config.count {
+                write!(out_file, "{:>4} {text}", count)?;
+            } else {
+                write!(out_file, "{text}")?;
+            }
+        };
+        Ok(())
+    };
+    let mut line = String::new();
+    let mut prev_line = String::new();
+    let mut count: u64 = 0;
     loop {
         let bytes = file.read_line(&mut line)?;
         if bytes == 0 {
             break;
-        }
-        if first_line {
-            first_line = false;
-            prev_line = line.clone();
-            count += 1;
-            line.clear();
-            continue;
         }
         if prev_line.trim_end() == line.trim_end() {
             count += 1;
             line.clear();
             continue;
         }
-        if config.count {
-            write!(out_file, "{:>4} {prev_line}", count)?;
-        } else {
-            write!(out_file, "{prev_line}")?;
-        }
+        print(count, &prev_line)?;
         prev_line = line.clone();
         line.clear();
         count = 1;
     }
-    if count > 0 {
-        if config.count {
-            write!(out_file, "{:>4} {prev_line}", count)?;
-        } else {
-            write!(out_file, "{prev_line}")?;
-        }
-    }
+    print(count, &prev_line)?;
     Ok(())
 }
