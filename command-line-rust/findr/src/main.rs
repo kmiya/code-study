@@ -83,16 +83,19 @@ pub fn run(args: Args) -> Result<()> {
                     if args.entry_types.contains(&EntryType::Dir) {
                         if entry.file_type().is_dir() {
                             println!("{}", entry.path().display());
+                            continue;
                         }
                     }
                     if args.entry_types.contains(&EntryType::File) {
                         if entry.file_type().is_file() {
                             println!("{}", entry.path().display());
+                            continue;
                         }
                     }
                     if args.entry_types.contains(&EntryType::Link) {
                         if entry.file_type().is_symlink() {
                             println!("{}", entry.path().display());
+                            continue;
                         }
                     }
                 }
