@@ -1,3 +1,5 @@
+use std::fs::File;
+
 use anyhow::Result;
 use clap::{builder::PossibleValue, ArgAction, Parser, ValueEnum};
 use regex::Regex;
@@ -76,27 +78,14 @@ pub fn run(args: Args) -> Result<()> {
                             continue;
                         }
                     }
-                    if args.entry_types.is_empty() {
+                    if args.entry_types.is_empty()
+                        || args.entry_types.iter().any(|entry_type| match entry_type {
+                            EntryType::Dir => entry.file_type().is_dir(),
+                            EntryType::File => entry.file_type().is_file(),
+                            EntryType::Link => entry.file_type().is_symlink(),
+                        })
+                    {
                         println!("{}", entry.path().display());
-                        continue;
-                    }
-                    if args.entry_types.contains(&EntryType::Dir) {
-                        if entry.file_type().is_dir() {
-                            println!("{}", entry.path().display());
-                            continue;
-                        }
-                    }
-                    if args.entry_types.contains(&EntryType::File) {
-                        if entry.file_type().is_file() {
-                            println!("{}", entry.path().display());
-                            continue;
-                        }
-                    }
-                    if args.entry_types.contains(&EntryType::Link) {
-                        if entry.file_type().is_symlink() {
-                            println!("{}", entry.path().display());
-                            continue;
-                        }
                     }
                 }
             }
