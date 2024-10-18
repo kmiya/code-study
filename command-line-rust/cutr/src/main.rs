@@ -1,8 +1,9 @@
 use crate::Extract::*;
 use std::{fmt::Debug, ops::Range};
 
-use anyhow::{Ok, Result};
+use anyhow::{anyhow, Ok, Result};
 use clap::Parser;
+use regex::Regex;
 
 type PositionList = Vec<Range<usize>>;
 
@@ -46,7 +47,23 @@ struct ArgsExtract {
 }
 
 fn parse_pos(range: &str) -> Result<PositionList> {
-    unimplemented!();
+    if range.is_empty() {
+        return Err(anyhow!("empty input"));
+    }
+    if range == "0" {
+        return Err(anyhow!(r#"illegal list value: "0""#));
+    }
+    // A leading "+" is an error
+    let leading_plus_re = Regex::new(r".*\+[0-9].*")?;
+    if leading_plus_re.is_match(range) {
+        return Err(anyhow!(r#"illegal list value: "{}""#, range));
+    }
+    // Any no-number is an error
+    let accept_pattern = Regex::new(r"^[0]*[1-9]*((,-){1}[0]*[1-9]+)?$")?;
+    if !accept_pattern.is_match(range) {
+        return Err(anyhow!(r#"illegal list value: "{}""#, range));
+    }
+    Ok(vec![])
 }
 
 fn main() {
@@ -77,7 +94,7 @@ mod unit_tests {
 
         let res = parse_pos("0-1");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), r#"illegal list value: "0""#);
+        assert_eq!(res.unwrap_err().to_string(), r#"illegal list value: "0-1""#);
 
         // A leading "+" is an error
         let res = parse_pos("+1");
@@ -105,7 +122,7 @@ mod unit_tests {
 
         let res = parse_pos("1,a");
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().to_string(), r#"illegal list value: "a""#);
+        assert_eq!(res.unwrap_err().to_string(), r#"illegal list value: "1,a""#);
 
         let res = parse_pos("1-a");
         assert!(res.is_err());
