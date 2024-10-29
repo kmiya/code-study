@@ -59,10 +59,15 @@ fn parse_pos(range: &str) -> Result<PositionList> {
         return Err(anyhow!(r#"illegal list value: "{}""#, range));
     }
     // Any no-number is an error
-    let accept_pattern = Regex::new(r"^[0]*[1-9]*((,-){1}[0]*[1-9]+)?$")?;
-    if !accept_pattern.is_match(range) {
-        return Err(anyhow!(r#"illegal list value: "{}""#, range));
+    let accept_pattern = Regex::new(r"^(0*[1-9]*)([,-](0*[1-9])+)?$")?;
+    let mut results = vec![];
+    for (_, [start, end1, end2]) in accept_pattern.captures_iter(range).map(|c| c.extract()) {
+        results.push((start.parse::<u64>()?, end1, end2.parse::<u64>()?));
     }
+    println!("{results:?}");
+    // if !accept_pattern.is_match(range) {
+    //     return Err(anyhow!(r#"illegal list value: "{}""#, range));
+    // }
     Ok(vec![])
 }
 
@@ -74,7 +79,8 @@ fn main() {
 }
 
 fn run(args: Args) -> Result<()> {
-    println!("{args:#?}");
+    let result = parse_pos(&args.extract.fields.unwrap());
+    println!("{result:?}");
     Ok(())
 }
 
