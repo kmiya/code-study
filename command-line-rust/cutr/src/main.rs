@@ -1,7 +1,7 @@
 use crate::Extract::*;
-use std::{fmt::Debug, ops::Range};
+use std::{fmt::Debug, num::NonZeroUsize, ops::Range};
 
-use anyhow::{anyhow, Ok, Result};
+use anyhow::{anyhow, bail, Ok, Result};
 use clap::Parser;
 use regex::Regex;
 
@@ -46,29 +46,43 @@ struct ArgsExtract {
     chars: Option<String>,
 }
 
+fn parse_index(input: &str) -> Result<usize> {
+    let value_error = || anyhow!(r#"illegal list value: "{input}""#);
+    input
+        .starts_with('+')
+        .then(|| Err(value_error()))
+        .unwrap_or_else(|| {
+            input
+                .parse::<NonZeroUsize>()
+                .map(|n| usize::from(n) - 1)
+                .map_err(|_| value_error())
+        })
+}
+
 fn parse_pos(range: &str) -> Result<PositionList> {
-    if range.is_empty() {
-        return Err(anyhow!("empty input"));
-    }
-    if range == "0" {
-        return Err(anyhow!(r#"illegal list value: "0""#));
-    }
-    // A leading "+" is an error
-    let leading_plus_re = Regex::new(r".*\+[0-9].*")?;
-    if leading_plus_re.is_match(range) {
-        return Err(anyhow!(r#"illegal list value: "{}""#, range));
-    }
-    // Any no-number is an error
-    let accept_pattern = Regex::new(r"^(0*[1-9]*)([,-](0*[1-9])+)?$")?;
-    let mut results = vec![];
-    for (_, [start, end1, end2]) in accept_pattern.captures_iter(range).map(|c| c.extract()) {
-        results.push((start.parse::<u64>()?, end1, end2.parse::<u64>()?));
-    }
-    println!("{results:?}");
-    // if !accept_pattern.is_match(range) {
-    //     return Err(anyhow!(r#"illegal list value: "{}""#, range));
-    // }
-    Ok(vec![])
+    let range_re = Regex::new(r"^(\d+)-(\d+)$").unwrap();
+    range
+        .split(',')
+        .into_iter()
+        .map(|val| {
+            parse_index(val).map(|n| n..n + 1).or_else(|e| {
+                range_re.captures(val).ok_or(e).and_then(|captures| {
+                    let n1 = parse_index(&captures[1])?;
+                    let n2 = parse_index(&captures[2])?;
+                    if n1 >= n2 {
+                        bail!(
+                            "First number in range ({}) \
+                            must be lower than second number ({})",
+                            n1 + 1,
+                            n2 + 1
+                        );
+                    }
+                    Ok(n1..n2 + 1)
+                })
+            })
+        })
+        .collect::<Result<_, _>>()
+        .map_err(From::from)
 }
 
 fn main() {
@@ -79,7 +93,7 @@ fn main() {
 }
 
 fn run(args: Args) -> Result<()> {
-    let result = parse_pos(&args.extract.fields.unwrap());
+    let result = parse_pos(&args.extract.fields.unwrap())?;
     println!("{result:?}");
     Ok(())
 }
