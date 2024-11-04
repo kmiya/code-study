@@ -59,7 +59,7 @@ fn parse_index(input: &str) -> Result<usize> {
         })
 }
 
-fn parse_pos(range: &str) -> Result<PositionList> {
+fn parse_pos(range: String) -> Result<PositionList> {
     let range_re = Regex::new(r"^(\d+)-(\d+)$").unwrap();
     range
         .split(',')
@@ -93,8 +93,22 @@ fn main() {
 }
 
 fn run(args: Args) -> Result<()> {
-    let result = parse_pos(&args.extract.fields.unwrap())?;
-    println!("{result:?}");
+    let delim_bytes = args.delimiter.as_bytes();
+    if delim_bytes.len() != 1 {
+        bail!(r#"--delim "{}" must be a single byte"#, args.delimiter);
+    }
+    let delimiter: u8 = *delim_bytes.first().unwrap();
+
+    let extract = if let Some(fields) = args.extract.fields.map(parse_pos).transpose()? {
+        Extract::Fields(fields)
+    } else if let Some(bytes) = args.extract.bytes.map(parse_pos).transpose()? {
+        Extract::Bytes(bytes)
+    } else if let Some(chars) = args.extract.chars.map(parse_pos).transpose()? {
+        Extract::Chars(chars)
+    } else {
+        unreachable!("Must have --fields, --bytes, or --chars");
+    };
+
     Ok(())
 }
 
