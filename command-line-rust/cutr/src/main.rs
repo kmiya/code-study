@@ -1,7 +1,13 @@
 use crate::Extract::*;
-use std::{fmt::Debug, num::NonZeroUsize, ops::Range};
+use std::{
+    fmt::Debug,
+    fs::File,
+    io::{self, BufRead, BufReader},
+    num::NonZeroUsize,
+    ops::Range,
+};
 
-use anyhow::{anyhow, bail, Ok, Result};
+use anyhow::{anyhow, bail, Result};
 use clap::Parser;
 use regex::Regex;
 
@@ -44,6 +50,13 @@ struct ArgsExtract {
     /// Selected chars
     #[arg(short, long, value_name = "CHARS")]
     chars: Option<String>,
+}
+
+fn open(filename: &str) -> Result<Box<dyn BufRead>> {
+    match filename {
+        "-" => Ok(Box::new(BufReader::new(io::stdin()))),
+        _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
+    }
 }
 
 fn parse_index(input: &str) -> Result<usize> {
@@ -108,7 +121,12 @@ fn run(args: Args) -> Result<()> {
     } else {
         unreachable!("Must have --fields, --bytes, or --chars");
     };
-
+    for filename in &args.files {
+        match open(filename) {
+            Err(err) => eprintln!("{filename}: {err}"),
+            Ok(_) => println!("Opened {filename}"),
+        }
+    }
     Ok(())
 }
 
@@ -119,30 +137,30 @@ mod unit_tests {
     #[test]
     fn test_parse_pos() {
         // The empty string is an error
-        assert!(parse_pos("").is_err());
+        assert!(parse_pos("".to_string()).is_err());
 
         // Zero is an error
-        let res = parse_pos("0");
+        let res = parse_pos("0".to_string());
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), r#"illegal list value: "0""#);
 
-        let res = parse_pos("0-1");
+        let res = parse_pos("0-1".to_string());
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), r#"illegal list value: "0-1""#);
 
         // A leading "+" is an error
-        let res = parse_pos("+1");
+        let res = parse_pos("+1".to_string());
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), r#"illegal list value: "+1""#);
 
-        let res = parse_pos("+1-2");
+        let res = parse_pos("+1-2".to_string());
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
             r#"illegal list value: "+1-2""#
         );
 
-        let res = parse_pos("1-+2");
+        let res = parse_pos("1-+2".to_string());
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
@@ -150,50 +168,50 @@ mod unit_tests {
         );
 
         // Any no-number is an error
-        let res = parse_pos("a");
+        let res = parse_pos("a".to_string());
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), r#"illegal list value: "a""#);
 
-        let res = parse_pos("1,a");
+        let res = parse_pos("1,a".to_string());
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), r#"illegal list value: "1,a""#);
 
-        let res = parse_pos("1-a");
+        let res = parse_pos("1-a".to_string());
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), r#"illegal list value: "1-a""#);
 
-        let res = parse_pos("a-1");
+        let res = parse_pos("a-1".to_string());
         assert!(res.is_err());
         assert_eq!(res.unwrap_err().to_string(), r#"illegal list value: "a-1""#);
 
         // Wonky ranges
-        let res = parse_pos("-");
+        let res = parse_pos("-".to_string());
         assert!(res.is_err());
 
-        let res = parse_pos(",");
+        let res = parse_pos(",".to_string());
         assert!(res.is_err());
 
-        let res = parse_pos("1,");
+        let res = parse_pos("1,".to_string());
         assert!(res.is_err());
 
-        let res = parse_pos("1-");
+        let res = parse_pos("1-".to_string());
         assert!(res.is_err());
 
-        let res = parse_pos("1-1-1");
+        let res = parse_pos("1-1-1".to_string());
         assert!(res.is_err());
 
-        let res = parse_pos("1-1-a");
+        let res = parse_pos("1-1-a".to_string());
         assert!(res.is_err());
 
         // First number must be less than second
-        let res = parse_pos("1-1");
+        let res = parse_pos("1-1".to_string());
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
             r#"First number in range (1) must be lower than second number (2)"#
         );
 
-        let res = parse_pos("2-1");
+        let res = parse_pos("2-1".to_string());
         assert!(res.is_err());
         assert_eq!(
             res.unwrap_err().to_string(),
@@ -201,35 +219,35 @@ mod unit_tests {
         );
 
         // All the following are acceptable
-        let res = parse_pos("1");
+        let res = parse_pos("1".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), vec![0..1]);
 
-        let res = parse_pos("01");
+        let res = parse_pos("01".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), vec![0..1]);
 
-        let res = parse_pos("1,3");
+        let res = parse_pos("1,3".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), vec![0..1, 2..3]);
 
-        let res = parse_pos("001,0003");
+        let res = parse_pos("001,0003".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), vec![0..1, 2..3]);
 
-        let res = parse_pos("1-3");
+        let res = parse_pos("1-3".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), vec![0..3]);
 
-        let res = parse_pos("0001,03");
+        let res = parse_pos("0001,03".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), vec![0..3]);
 
-        let res = parse_pos("1,7,3-5");
+        let res = parse_pos("1,7,3-5".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), vec![0..1, 6..7, 2..5]);
 
-        let res = parse_pos("15,19-20");
+        let res = parse_pos("15,19-20".to_string());
         assert!(res.is_ok());
         assert_eq!(res.unwrap(), vec![14..15, 18..20]);
     }
