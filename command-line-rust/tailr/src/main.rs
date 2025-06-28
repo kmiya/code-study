@@ -1,5 +1,5 @@
 use crate::TakeValue::*;
-use std::sync::OnceLock;
+use std::{fs::File, sync::OnceLock};
 
 use anyhow::{Result, anyhow, bail};
 use clap::{Parser, arg};
@@ -40,6 +40,12 @@ fn main() {
 }
 
 fn run(args: Args) -> Result<()> {
+    for filename in args.files.iter() {
+        match File::open(filename) {
+            Err(e) => eprintln!("{}: {}", filename, e),
+            Ok(_) => println!("Opened {}", filename),
+        }
+    }
     let lines = parse_num(args.lines).map_err(|e| anyhow!("illegal line count -- {e}"))?;
     let bytes = args
         .bytes
