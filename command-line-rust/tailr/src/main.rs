@@ -1,6 +1,7 @@
+use crate::TakeValue::*;
 use std::sync::OnceLock;
 
-use anyhow::{Result, bail};
+use anyhow::{Result, anyhow, bail};
 use clap::{Parser, arg};
 use regex::Regex;
 
@@ -39,7 +40,12 @@ fn main() {
 }
 
 fn run(args: Args) -> Result<()> {
-    println!("{:#?}", args);
+    let lines = parse_num(args.lines).map_err(|e| anyhow!("illegal line count -- {e}"))?;
+    let bytes = args
+        .bytes
+        .map(parse_num)
+        .transpose()
+        .map_err(|e| anyhow!("illegal byte count -- {e}"))?;
     Ok(())
 }
 
@@ -48,7 +54,19 @@ static NUM_RE: OnceLock<Regex> = OnceLock::new();
 fn parse_num(val: String) -> Result<TakeValue> {
     let num_re = NUM_RE.get_or_init(|| Regex::new(r"^([-+])?(\d+)$").unwrap());
     match num_re.captures(&val) {
-        Some(caps) => todo!(),
+        Some(caps) => {
+            let sign = caps.get(1).map_or("-", |m| m.as_str());
+            let signed_num = format!("{sign}{}", caps.get(2).unwrap().as_str());
+            if let Ok(num) = signed_num.parse() {
+                if sign == "+" && num == 0 {
+                    Ok(TakeValue::PlusZero)
+                } else {
+                    Ok(TakeNum(num))
+                }
+            } else {
+                bail!(val)
+            }
+        }
         _ => bail!(val),
     }
 }
