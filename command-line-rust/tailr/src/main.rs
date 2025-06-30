@@ -1,5 +1,9 @@
 use crate::TakeValue::*;
-use std::{fs::File, sync::OnceLock};
+use std::{
+    fs::File,
+    io::{BufRead, BufReader, Read, Seek},
+    sync::OnceLock,
+};
 
 use anyhow::{Result, anyhow, bail};
 use clap::{Parser, arg};
@@ -77,11 +81,107 @@ fn parse_num(val: String) -> Result<TakeValue> {
     }
 }
 
+fn count_lines_bytes(filename: &str) -> Result<(i64, i64)> {
+    let mut file = BufReader::new(File::open(filename)?);
+    let mut num_lines = 0;
+    let mut num_bytes = 0;
+    let mut buf = Vec::new();
+    loop {
+        let bytes_read = file.read_until(b'\n', &mut buf)?;
+        if bytes_read == 0 {
+            break;
+        }
+        num_lines += 1;
+        num_bytes += bytes_read as i64;
+        buf.clear();
+    }
+    Ok((num_lines, num_bytes))
+}
+
+fn print_lines(mut file: impl BufRead, num_lines: &TakeValue, total_lines: i64) -> Result<()> {
+    unimplemented!()
+}
+
+fn print_bytes<T: Read + Seek>(mut file: T, num_bytes: &TakeValue, total_bytes: i64) -> Result<()> {
+    unimplemented!()
+}
+
+fn get_start_index(take_val: &TakeValue, total: i64) -> Option<u64> {
+    match take_val {
+        PlusZero => {
+            if total > 0 {
+                Some(0)
+            } else {
+                None
+            }
+        }
+        TakeNum(num) => {
+            if num == &0 || total == 0 || num > &total {
+                None
+            } else {
+                let start = if num < &0 { total + num } else { num - 1 };
+                Some(if start < 0 { 0 } else { start as u64 })
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::TakeValue::PlusZero;
-    use crate::TakeValue::TakeNum;
+    use crate::TakeValue::*;
+    use crate::count_lines_bytes;
+    use crate::get_start_index;
     use crate::parse_num;
+
+    #[test]
+    fn test_count_lines_bytes() {
+        let res = count_lines_bytes("tests/inputs/one.txt");
+        assert!(res.is_ok());
+        let (lines, bytes) = res.unwrap();
+        assert_eq!(lines, 1);
+        assert_eq!(bytes, 24);
+
+        let res = count_lines_bytes("tests/inputs/twelve.txt");
+        assert!(res.is_ok());
+        let (lines, bytes) = res.unwrap();
+        assert_eq!(lines, 12);
+        assert_eq!(bytes, 63);
+    }
+
+    #[test]
+    fn test_get_start_index() {
+        // +0 from an empty file (0 lines/bytes) returns None
+        assert_eq!(get_start_index(&PlusZero, 0), None);
+
+        // +0 from a nonempty file returns an index that
+        // is one less than the number of lines/bytes
+        assert_eq!(get_start_index(&PlusZero, 1), Some(0));
+
+        // Taking 0 lines/bytes returns None
+        assert_eq!(get_start_index(&TakeNum(0), 1), None);
+
+        // Taking any lines/bytes from an empty file returns None
+        assert_eq!(get_start_index(&TakeNum(1), 0), None);
+
+        // Taking more lines/bytes than is available returns None
+        assert_eq!(get_start_index(&TakeNum(2), 1), None);
+
+        // When starting line/byte is less than total lines/bytes,
+        // return one less than starting number
+        assert_eq!(get_start_index(&TakeNum(1), 10), Some(0));
+        assert_eq!(get_start_index(&TakeNum(2), 10), Some(1));
+        assert_eq!(get_start_index(&TakeNum(3), 10), Some(2));
+
+        // When starting line/byte is negative and less than total,
+        // return total - start
+        assert_eq!(get_start_index(&TakeNum(-1), 10), Some(9));
+        assert_eq!(get_start_index(&TakeNum(-2), 10), Some(8));
+        assert_eq!(get_start_index(&TakeNum(-3), 10), Some(7));
+
+        // When the starting line/byte is negative and more than the total,
+        // return 0 to print the whole file
+        assert_eq!(get_start_index(&TakeNum(-20), 10), Some(0));
+    }
 
     #[test]
     fn test_parse_num() {
