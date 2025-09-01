@@ -1,9 +1,13 @@
+use std::ffi::OsStr;
+use std::fs;
 use std::path::PathBuf;
 
 use anyhow::Result;
 use anyhow::anyhow;
+use anyhow::bail;
 use clap::Parser;
 use regex::RegexBuilder;
+use walkdir::WalkDir;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about)]
@@ -44,11 +48,32 @@ fn run(args: Args) -> Result<()> {
                 .map_err(|_| anyhow!(r#"Invalid --pattern "{val}""#))
         })
         .transpose()?;
+
+    let files = find_files(&args.sources)?;
+    println!("{:#?}", files);
     Ok(())
 }
 
 fn find_files(paths: &[String]) -> Result<Vec<PathBuf>> {
-    unimplemented!()
+    let dat = OsStr::new("dat");
+    let mut files = vec![];
+
+    for path in paths {
+        match fs::metadata(path) {
+            Err(e) => bail!("{path}: {e}"),
+            Ok(_) => files.extend(
+                WalkDir::new(path)
+                    .into_iter()
+                    .filter_map(Result::ok)
+                    .filter(|e| e.file_type().is_file() && e.path().extension() != Some(dat))
+                    .map(|e| e.path().into()),
+            ),
+        }
+    }
+
+    files.sort();
+    files.dedup();
+    Ok(files)
 }
 
 #[cfg(test)]
