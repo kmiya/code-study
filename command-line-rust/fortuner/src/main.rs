@@ -51,7 +51,6 @@ fn main() {
 }
 
 fn run(args: Args) -> Result<()> {
-    println!("{:#?}", args);
     let pattern = args
         .pattern
         .map(|val: String| {
@@ -63,7 +62,31 @@ fn run(args: Args) -> Result<()> {
         .transpose()?;
 
     let files = find_files(&args.sources)?;
-    println!("{:#?}", files);
+    let fortunes = read_fortunes(&files)?;
+
+    match pattern {
+        Some(pattern) => {
+            let mut prev_source = None;
+            for fortune in fortunes
+                .iter()
+                .filter(|fortune| pattern.is_match(&fortune.text))
+            {
+                if prev_source.as_ref().map_or(true, |s| s != &fortune.source) {
+                    eprintln!("({})\n%", fortune.source);
+                    prev_source = Some(fortune.source.clone());
+                }
+                println!("{}\n%", fortune.text);
+            }
+        }
+        _ => {
+            println!(
+                "{}",
+                pick_fortune(&fortunes, args.seed)
+                    .or_else(|| Some("No fortunes found".to_string()))
+                    .unwrap()
+            );
+        }
+    }
     Ok(())
 }
 
