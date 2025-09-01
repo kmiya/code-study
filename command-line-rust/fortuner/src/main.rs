@@ -9,6 +9,10 @@ use anyhow::Result;
 use anyhow::anyhow;
 use anyhow::bail;
 use clap::Parser;
+use rand::RngCore;
+use rand::SeedableRng;
+use rand::rngs::StdRng;
+use rand::seq::IndexedRandom;
 use regex::RegexBuilder;
 use walkdir::WalkDir;
 
@@ -111,10 +115,18 @@ fn read_fortunes(paths: &[PathBuf]) -> Result<Vec<Fortune>> {
     Ok(fortunes)
 }
 
+fn pick_fortune(fortunes: &[Fortune], seed: Option<u64>) -> Option<String> {
+    let mut rng: Box<dyn RngCore> = match seed {
+        Some(val) => Box::new(StdRng::seed_from_u64(val)),
+        _ => Box::new(rand::rng()),
+    };
+
+    fortunes.choose(&mut rng).map(|f| f.text.to_string())
+}
+
 #[cfg(test)]
 mod tests {
-    use super::find_files;
-    use super::read_fortunes;
+    use super::{Fortune, find_files, pick_fortune, read_fortunes};
     use std::path::PathBuf;
 
     #[test]
@@ -191,5 +203,32 @@ mod tests {
         ]);
         assert!(res.is_ok());
         assert_eq!(res.unwrap().len(), 11);
+    }
+
+    #[test]
+    fn test_pick_fortune() {
+        // Create a slice of fortunes
+        let fortunes = &[
+            Fortune {
+                source: "fortunes".to_string(),
+                text: "You cannot achieve the impossible without \
+                      attempting the absurd."
+                    .to_string(),
+            },
+            Fortune {
+                source: "fortunes".to_string(),
+                text: "Assumption is the mother of all screw-ups.".to_string(),
+            },
+            Fortune {
+                source: "fortunes".to_string(),
+                text: "Neckties strangle clear thinking.".to_string(),
+            },
+        ];
+
+        // Pick a fortune with a seed
+        assert_eq!(
+            pick_fortune(fortunes, Some(1)).unwrap(),
+            "Neckties strangle clear thinking.".to_string()
+        );
     }
 }
