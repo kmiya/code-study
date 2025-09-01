@@ -1,5 +1,8 @@
 use std::ffi::OsStr;
 use std::fs;
+use std::fs::File;
+use std::io::BufRead;
+use std::io::BufReader;
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -28,6 +31,12 @@ struct Args {
     /// Random seed
     #[arg(short, long, value_parser(clap::value_parser!(u64)))]
     seed: Option<u64>,
+}
+
+#[derive(Debug)]
+struct Fortune {
+    source: String,
+    text: String,
 }
 
 fn main() {
@@ -76,9 +85,37 @@ fn find_files(paths: &[String]) -> Result<Vec<PathBuf>> {
     Ok(files)
 }
 
+fn read_fortunes(paths: &[PathBuf]) -> Result<Vec<Fortune>> {
+    let mut fortunes = vec![];
+    let mut buffer = vec![];
+
+    for path in paths {
+        let basename = path.file_name().unwrap().to_string_lossy().into_owned();
+        let file = File::open(path).map_err(|e| anyhow!("{}: {e}", path.to_string_lossy()))?;
+
+        for line in BufReader::new(file).lines().map_while(Result::ok) {
+            if line == "%" {
+                if !buffer.is_empty() {
+                    fortunes.push(Fortune {
+                        source: basename.clone(),
+                        text: buffer.join("\n"),
+                    });
+                    buffer.clear();
+                }
+            } else {
+                buffer.push(line.to_string());
+            }
+        }
+    }
+
+    Ok(fortunes)
+}
+
 #[cfg(test)]
 mod tests {
     use super::find_files;
+    use super::read_fortunes;
+    use std::path::PathBuf;
 
     #[test]
     fn test_find_files() {
@@ -124,5 +161,35 @@ mod tests {
         if let Some(filename) = files.last().unwrap().file_name() {
             assert_eq!(filename.to_string_lossy(), "jokes".to_string())
         }
+    }
+
+    #[test]
+    fn test_read_fortunes() {
+        // Parses all the fortunes without a filter
+        let res = read_fortunes(&[PathBuf::from("./tests/inputs/jokes")]);
+        assert!(res.is_ok());
+
+        if let Ok(fortunes) = res {
+            // Correct number and sorting
+            assert_eq!(fortunes.len(), 6);
+            assert_eq!(
+                fortunes.first().unwrap().text,
+                "Q. What do you call a head of lettuce in a shirt and tie?\n\
+                A. Collared greens."
+            );
+            assert_eq!(
+                fortunes.last().unwrap().text,
+                "Q: What do you call a deer wearing an eye patch?\n\
+                A: A bad idea (bad-eye deer)."
+            );
+        }
+
+        // Filters for matching text
+        let res = read_fortunes(&[
+            PathBuf::from("./tests/inputs/jokes"),
+            PathBuf::from("./tests/inputs/quotes"),
+        ]);
+        assert!(res.is_ok());
+        assert_eq!(res.unwrap().len(), 11);
     }
 }
