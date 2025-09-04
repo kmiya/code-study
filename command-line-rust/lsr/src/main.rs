@@ -1,11 +1,7 @@
-use std::{
-    fs,
-    path::{Path, PathBuf},
-};
+use std::{fs, path::PathBuf};
 
 use anyhow::Result;
 use clap::{Parser, arg};
-use walkdir:walkdir;
 
 #[derive(Debug, Parser)]
 #[command(author, version, about)]
@@ -37,11 +33,28 @@ fn run(args: Args) -> Result<()> {
 }
 
 fn find_files(paths: &[String], show_hidden: bool) -> Result<Vec<PathBuf>> {
-    let mut results = vec![];
+    let mut results = Vec::<PathBuf>::new();
     for path in paths {
-        match fs::metadata(path) {
+        let metadata = fs::metadata(path);
+        match metadata {
             Err(e) => eprintln!("{path}: {e}"),
-            Ok(_) => results.extend(WalkDir::new(path).into_iter().filter_map(Result::ok)),
+            Ok(_) => {
+                if metadata.unwrap().is_file() {
+                    // Any existing file should be found even if hidden
+                    results.push(path.into());
+                    continue;
+                }
+                for entry in fs::read_dir(path)? {
+                    let entry = entry?;
+                    if entry.file_name().to_string_lossy().starts_with('.') {
+                        if show_hidden {
+                            results.push(entry.path());
+                        }
+                        continue;
+                    }
+                    results.push(entry.path());
+                }
+            }
         }
     }
     results.sort();
